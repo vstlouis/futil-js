@@ -51,7 +51,7 @@
     "coveralls": "^3.0.0",
     "duti": "latest",
     "eslint": "4.1.0",
-    "eslint-config-smartprocure": "^1.0.2",
+    "eslint-config-smartprocure": "^1.1.0",
     "karma": "^1.7.1",
     "karma-chai": "^0.1.0",
     "karma-chai-as-promised": "^0.1.2",
