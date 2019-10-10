@@ -54,7 +54,7 @@
     "chokidar": "^2.0.0",
     "chokidar-cli": "^1.2.0",
     "codacy-coverage": "^3.0.0",
-    "coveralls": "^3.0.0",
+    "coveralls": "^3.0.7",
     "danger": "^6.1.13",
     "duti": "latest",
     "eslint": "4.19.1",
