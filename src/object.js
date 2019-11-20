@@ -38,13 +38,14 @@ export const stripEmptyObjects = _.pickBy(isNotEmptyObject)
 // { a: { b: 1, c: 2 } }, [ 'b' ] -> { a: { b: 1 } }
 export const pickInto = (map, source) => _.mapValues(pickIn(source), map)
 
-// map rename implementation (not used here yet):
-// http://jsfiddle.net/daedalus28/8uQUD/
-export const renameProperty = _.curry((from, to, target) => {
-  target[to] = target[from]
-  delete target[from]
-  return target
-})
+export const renameProperty = _.curry((from, to, target) =>
+  _.has(from, target)
+    ? _.flow(
+        x => _.set(to, _.get(from, x), x),
+        _.unset(from)
+      )(target)
+    : target
+)
 
 // { x:['a','b'], y:1 } -> [{ x:'a', y:1 }, { x:'b', y:1 }] just like mongo's `$unwind`
 export const unwind = _.curry((prop, x) =>
@@ -163,12 +164,11 @@ export let pickOn = (paths = [], obj = {}) =>
     })
   )(obj)
 
+let mergeArrays = (objValue, srcValue) =>
+  _.isArray(objValue) ? objValue.concat(srcValue) : undefined
+
 // Straight from the lodash docs
-export let mergeAllArrays = _.mergeAllWith((objValue, srcValue) => {
-  if (_.isArray(objValue)) {
-    return objValue.concat(srcValue)
-  }
-})
+export let mergeAllArrays = _.mergeAllWith(mergeArrays)
 // { a: [x, y, z], b: [x] } -> { x: [a, b], y: [a], z: [a] }
 export let invertByArray = _.flow(
   mapIndexed((arr, key) => zipObjectDeepWith(arr, () => [key])),
@@ -184,3 +184,38 @@ export let omitNil = x => _.omitBy(_.isNil, x)
 export let omitNull = x => _.omitBy(_.isNull, x)
 export let omitBlank = x => _.omitBy(isBlank, x)
 export let omitEmpty = x => _.omitBy(_.isEmpty, x)
+
+// ([f, g]) -> (x, y) -> {...f(x, y), ...g(x, y)}
+export let mergeOverAll = _.curryN(2, (fns, ...x) =>
+  _.flow(
+    _.over(fns),
+    _.mergeAll
+  )(...x)
+)
+
+// customizer -> ([f, g]) -> (x, y) -> {...f(x, y), ...g(x, y)}
+export let mergeOverAllWith = _.curryN(3, (customizer, fns, ...x) =>
+  _.flow(
+    _.over(fns),
+    _.mergeAllWith(customizer)
+  )(...x)
+)
+
+// ([f, g]) -> (x, y) -> {...f(x, y), ...g(x, y)}
+export let mergeOverAllArrays = mergeOverAllWith(mergeArrays)
+
+// (x -> y) -> k -> {k: x} -> y
+export let getWith = _.curry((customizer, path, object) =>
+  customizer(_.get(path, object))
+)
+
+// ({a} -> {b}) -> {a} -> {a, b}
+export let expandObject = _.curry((transform, obj) => ({
+  ...obj,
+  ...transform(obj),
+}))
+
+// k -> (a -> {b}) -> {k: a} -> {a, b}
+export let expandObjectBy = _.curry((key, fn, obj) =>
+  expandObject(getWith(fn, key))(obj)
+)

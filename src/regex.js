@@ -10,15 +10,16 @@ export const makeAndTest = options =>
     testRegex
   )
 
-const anyWordToRegexp = _.flow(
+export const anyWordToRegexp = _.flow(
   _.words,
   _.join('|')
 )
 
-const wordsToRegexp = _.flow(
+export const wordsToRegexp = _.flow(
   _.words,
-  _.map(x => `(?=.*${x})`),
-  _.join('')
+  _.map(x => `(?=.*${x}.*)`),
+  _.join(''),
+  x => `.*${x}.*`
 )
 
 const matchWords = _.curry((buildRegex, x) => {

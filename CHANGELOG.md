@@ -1,4 +1,47 @@
-﻿# 1.58.0
+# 1.64.2
+- Handle `[]`, `undefined`, and `null` arguments in `chunkBy`
+
+# 1.64.1
+- Use `_.hasIn` in `targetBinding` to account for objects with `target` as an inherited property (eg, in synthetic DOM events)
+
+# 1.64.0
+- Add new native lens formats, `arrayLens` and `functionPairLens`
+- Make `domLens.value` more flexible by supporting non-native onChange events (allow `targetBinding` to fall back to the provided value if `e.target[key]` is not passed in)
+- Update a bunch of dev dependencies
+
+# 1.63.1
+- Clarify `chunkBy` description in README
+
+# 1.63.0
+- Add partial currying support to `mergeOverAll`
+- Add `mergeOverAllWith` and `mergeOverAllArrays`
+
+# 1.62.1
+- Better currying for `logic` methods (`ifElse`, `when`, `whenExists`, etc)
+
+# 1.62.0
+- Add `getWith`, `expandObject`, and `expandObjectBy`
+
+# 1.61.0
+- Add `compactMap`
+
+# 1.60.0
+- Add `mergeOverAll`
+
+# 1.59.1
+- change all words regex to report full string as match rather than empty string
+
+# 1.59.0
+- export `anyWordToRegexp` and `wordsToRegexp`
+
+# 1.58.1
+- Fixed issue where `renameProperty` was not a pure function. Specifically:
+ 1. The original object was mutated.
+ 2. If the original object din't have the property to be renamed the function was
+    adding the property with a value of `undefined`.
+ 3. If code was relying in this incorrect behavior this will be a braking change.
+
+# 1.58.0
 - Add `uniqueString` and `uniqueStringWith`
 
 # 1.57.0

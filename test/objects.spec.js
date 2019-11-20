@@ -1,5 +1,6 @@
 import chai from 'chai'
 import * as F from '../src'
+import _ from 'lodash/fp'
 
 chai.expect()
 const expect = chai.expect
@@ -141,9 +142,10 @@ describe('Object Functions', () => {
   it('renameProperty', () => {
     const o = { a: 1 }
     const newO = F.renameProperty('a', 'b', o)
-    expect(o).to.deep.equal(newO)
-    expect(o).to.deep.equal({ b: 1 })
+    expect(newO).not.to.deep.equal(o)
     expect(newO).to.deep.equal({ b: 1 })
+    const new1 = F.renameProperty('c', 'b', o)
+    expect(new1).to.deep.equal({ a: 1 })
   })
   it('matchesSignature', () => {
     expect(F.matchesSignature([], 0)).to.equal(false)
@@ -526,6 +528,10 @@ describe('Object Functions', () => {
       a: 3,
       b: [2, 3, 4],
     })
+    expect(F.mergeAllArrays([{ a: [1], b: 5 }, { a: [2] }])).to.deep.equal({
+      a: [1, 2],
+      b: 5,
+    })
   })
   it('invertByArray', () => {
     expect(
@@ -585,6 +591,102 @@ describe('Object Functions', () => {
       F.omitEmpty({ a: 1, b: 'c', d: null, e: undefined, f: [], g: {}, h: '' })
     ).to.deep.equal({
       b: 'c',
+    })
+  })
+  it('mergeOverAll', () => {
+    let foo = x => ({ [x]: 'foo' })
+    let bar = x => ({ bar: x, [x]: 'bar' })
+    expect(F.mergeOverAll([foo, bar])('a')).to.deep.equal({
+      a: 'bar',
+      bar: 'a',
+    })
+    expect(F.mergeOverAll([bar, foo])('a')).to.deep.equal({
+      a: 'foo',
+      bar: 'a',
+    })
+    // should NOT merge arrays
+    let qux = a => ({ x: a.map(x => x + 3) })
+    expect(F.mergeOverAll([x => ({ x }), qux])([1, 2, 3])).to.deep.equal({
+      x: [4, 5, 6],
+    })
+    // documenting edge case behavior
+    expect(F.mergeOverAll(undefined, undefined)).to.deep.equal({})
+    expect(F.mergeOverAll(undefined)(undefined)).to.deep.equal({})
+    expect(F.mergeOverAll([])(undefined)).to.deep.equal(undefined)
+    expect(F.mergeOverAll([x => x, (x, y) => y])('abc', 'de')).to.deep.equal({
+      0: 'd',
+      1: 'e',
+      2: 'c',
+    })
+  })
+  it('mergeOverAllWith', () => {
+    let reverseArrayCustomizer = (objValue, srcValue) =>
+      srcValue.length ? srcValue.reverse() : srcValue
+    let qux = a => ({ x: a.map(x => x + 3) })
+    expect(
+      F.mergeOverAllWith(reverseArrayCustomizer, [() => ({}), qux])([1, 2, 3])
+    ).to.deep.equal({ x: [6, 5, 4] })
+  })
+  it('mergeOverAllArrays', () => {
+    // should merge arrays
+    let qux = a => ({ x: a.map(x => x + 3) })
+    expect(F.mergeOverAllArrays([x => ({ x }), qux])([1, 2, 3])).to.deep.equal({
+      x: [1, 2, 3, 4, 5, 6],
+    })
+  })
+  it('getWith', () => {
+    let square = x => x * x
+    let getWithSquare = F.getWith(square)
+    let foo = { a: 1, b: 3, c: 5 }
+    expect(getWithSquare('c', foo)).to.equal(25)
+    expect(F.getWith(x => x + 1, 'b', foo)).to.equal(4)
+    // edge case: throws when customizer is not a function
+    expect(() => F.getWith(undefined, 'b', foo)).to.throw(TypeError)
+  })
+  it('expandObject', () => {
+    let foo = { a: 1, b: 2, c: 'a' }
+    // should expand object
+    let toOptions = F.mapIndexed((v, k) => ({ label: k, value: v }))
+    expect(
+      F.expandObject(obj => ({ options: toOptions(obj) }), foo)
+    ).to.deep.equal({
+      a: 1,
+      b: 2,
+      c: 'a',
+      options: [
+        { label: 'a', value: 1 },
+        { label: 'b', value: 2 },
+        { label: 'c', value: 'a' },
+      ],
+    })
+    // should override keys
+    expect(F.expandObject(_.invert, foo)).to.deep.equal({
+      '1': 'a',
+      '2': 'b',
+      a: 'c',
+      b: 2,
+      c: 'a',
+    })
+  })
+  it('expandObjectBy', () => {
+    let primeFactorization = x =>
+      x === 42 ? { '2': 1, '3': 1, '7': 1 } : 'dunno'
+    let foo = { a: 1, b: 42 }
+    expect(F.expandObjectBy('b', primeFactorization, foo)).to.deep.equal({
+      a: 1,
+      b: 42,
+      '2': 1,
+      '3': 1,
+      '7': 1,
+    })
+    expect(F.expandObjectBy('a', primeFactorization, foo)).to.deep.equal({
+      '0': 'd',
+      '1': 'u',
+      '2': 'n',
+      '3': 'n',
+      '4': 'o',
+      a: 1,
+      b: 42,
     })
   })
 })

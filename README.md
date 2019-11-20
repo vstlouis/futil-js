@@ -82,15 +82,15 @@ Flurry is combo of flow + curry, preserving the arity of the initial function. S
 `([f1, f2, ...fn]) -> !f1(x) && !f2(x) && ...!fn(x)` Creates a function that checks if none of the array of predicates passed in returns truthy for `x`
 
 ### ifElse
-`(condition, onTrue, onFalse) -> x -> (T(condition)(x) ? onTrue(x) : onFalse(x))`
+`(condition, onTrue, onFalse, x) -> (T(condition)(x) ? onTrue(x) : onFalse(x))`
 http://ramdajs.com/docs/#ifElse. The transform function T supports passing a boolean for `condition` as well as any valid argument of `_.iteratee`, e.g. `myBool = applyTest(x); F.ifElse(myBool, doSomething, doSomethingElse);`
 
 ### when
-`(condition, onTrue) -> x -> (T(condition)(x) ? onTrue(x) : _.identity(x))`
+`(condition, onTrue, x) -> (T(condition)(x) ? onTrue(x) : _.identity(x))`
 http://ramdajs.com/docs/#when. `T` extends `_.iteratee` as above.
 
 ### unless
-`(condition, onFalse) -> x -> (T(condition)(x) ? _.identity(x) : onFalse(x))`
+`(condition, onFalse, x) -> (T(condition)(x) ? _.identity(x) : onFalse(x))`
 http://ramdajs.com/docs/#unless. `T` extends `_.iteratee` as above.
 
 ### whenTruthy
@@ -110,6 +110,10 @@ A version of `find` that also applies the predicate function to the result. Usef
 
 ### insertAtIndex
 `(index, val, array|string) -> array|string` Inserts value into an array or string at `index`
+
+### compactMap
+
+`(fn, collection) -> collection` Maps `fn` over the input collection and compacts the result.
 
 
 ## Collection Algebras or composable/recursive data types
@@ -194,10 +198,9 @@ A version of `_.zipObjectDeep` that supports passing a function to determine val
 `{ encode: ['a', 'b'] -> 'a/b', decode: 'a/b' -> ['a', 'b'] }` An encoder using `/` as the separator
 
 ### chunkBy
-`((a, a) -> Boolean) -> [a] -> [[a]]` Returns an array of
-arrays, where each one of the arrays has one or more elements of the
-original array, grouped by the first function received. Similar to
-Haskell's [groupBy](http://zvon.org/other/haskell/Outputlist/groupBy_f.html).
+`(([a], a) -> Boolean) -> [a] -> [[a]]` Takes a predicate function and an array, and returns an array of arrays where each element has one or more elements of the original array. Similar to Haskell's [groupBy](http://zvon.org/other/haskell/Outputlist/groupBy_f.html).
+
+The predicate is called with two arguments: the current group, and the current element. If it returns truthy, the element is appended to the current group; otherwise, it's used as the first element in a new group.
 
 ### toggleElement
 `(any, array) -> array` Removes an element from an array if it's included in the array, or pushes it in if it doesn't. Immutable (so it's a clone of the array).
@@ -290,7 +293,6 @@ Similar to `_.matches`, except it returns true if 1 or more object properties ma
 ### pickInto
 *TODO*
 
-
 ### renameProperty
 `sourcePropertyName -> targetPropertyName -> sourceObject -> sourceObject`
 Rename a property on an object.
@@ -382,6 +384,26 @@ Like `_.mergeAll`, but concats arrays instead of replacing. This is basically th
 
 ### omitEmpty
 `_.omitBy` using `_.isEmpty` as function argument.
+
+### mergeOverAll
+`([f, g], ...args) -> {...f(...args), ...g(...args)}` Composition of `_.over` and `_.mergeAll`. Takes an array of functions and an arbitrary number of arguments, calls each function with those arguments, and merges the results. Can be called with `mergeOverAll([f, g], x, y)` or `mergeOverAll([f, g])(x, y)`.
+
+Note that for functions that don't return objects, `_.merge`'s behavior is followed: for strings and arrays, the indices will be converted to keys and the result will be merged, and for all other primitives, nothing will be merged. 
+
+### mergeOverAllWith
+`(customizer, [f, g], ...args) -> {...f(...args), ...g(...args)}` A customizable `mergeOverAll` that takes a function of the form `(objValue, srcValue) -> newValue` as its first argument; see [`_.mergeWith`](https://lodash.com/docs/latest#mergeWith). Both the customizer and array of functions can be partially applied.
+
+### mergeOverAllArrays
+`([f, g], ...args) -> {...f(...args), ...g(...args)}` A customized `mergeOverAll` that applies the array-merging behavior of `mergeAllArrays`.
+
+### getWith
+`(x -> y) -> k -> {k: x} -> y` Like `_.get`, but accepts a customizer function which is called on the value to transform it before it is returned. Argument order is `(customizer, path, object)`.
+
+### expandObject
+`(transform: obj -> newObj) -> obj -> { ...obj, ...newObj }` Accepts a transform function and an object. Returns the result of applying the transform function to the object, merged onto the original object. `expandObject(f, obj)` is equivalent to `mergeOverAll([_.identity, f], obj)`.
+
+### expandObjectBy
+`key -> (transform: x -> newObj) -> (obj: { key: x }) -> { ...obj, ...newObj }` Expands an object by transforming the value at a single key into a new object, and merging the result with the original object. Similar to `expandObject`, but the argument order is `(key, transform, object)`, and the transform function is called on the value at that key instead of on the whole object.
 
 ## String
 
@@ -510,65 +532,52 @@ Recurses through an object's leaf properties and passes an array of booleans to 
 
 
 ## Lens
-A lens is a getter and setter pair, which can be used to interface to some part of an object graph.
-Methods that operate on lenses can encapsulate common operations independent of knowledge of their surrounding context.
-Unlike some traditional functional lenses (like Ramda's), the set methods here are generally mutable.
+A lens is a getter and setter pair. You use them to write code that needs to read _and_ write a value (like a method to flip a boolean switch, or a React component that reads and writes some state) without worrying about the implementation. 
 
-An object lens is simply an object that has a `get` and `set` function.
-An example of this is a mobx boxed observable.
+Functions that operate on lenses can handle a few different "shorthand" structures. This is similar to lodash's `_.iteratee` (which allows their methods to treat strings, objects, or functions as shorthand predicates)
 
-A function lens is a lens expressed as a single function that takes the value to set or returns the current value if nothing is passed.
-Examples of this in the wild are knockout observables and jquery plugin api style methods.
+A lens can be any of these formats:
 
-The utilities in this library expect can accept either kind of lens, and utilities are provided to seamlessly convert between the two.
+`({ get, set })`
+An object with a `get` function and `set` function.
+Found in: MobX "boxed observables"
+Example Usage: `F.flip({ get, set })`
 
-### Stubs
-Lens stubs are primarily a reference implementation, but are useful for testing and mocking purposes
+`([value, setter])`
+An array of the `value` and a `setter` function to change it.
+Found in: React's useState hook
+Example Usage: `F.flip([value, setter])`
 
-#### functionLens
-Takes a value and returns a function lens for that value
+`(lookup, object)`
+A lookup path and object pair e.g. ('key', object). The lookup path is anything you can pass to `_.get` (so nested paths with `.` or as an array are supported)
+Found in: MobX observable objects, native JS objects
+Example Usage: `F.flip(lookup, object)`
 
-#### objectLens
-Takes a value and returns a object lens for that value
+`(x => {})`
+A function which returns the value when called with no arguments and sets it when called with one.
+Found in: Knockout observables, jQuery plugin APIs
+Example Usage: `F.flip(x => {})`
 
-### Lens Conversions
-Methods to convert between lens types
+`(getter, setter)`
+A getter and setter pair.
+Found in: Anywhere you have a getter and setter function
+Example Usage: `F.flip(getter, setter)`
 
-#### fnToObj
-Converts a function lens an object lens
+> Note: Setter methods are generally mutable (unlike Ramda's lenses, for example).
 
-#### objToFn
-Converts an object lens to a function lens
-
-
-### Lens Construction
-This the main way you'll generally interact with the lens API
-
-#### lensProp
-`propertyName -> object -> { get: () -> object.propertyName, set: propertyValue -> object.propertyName }`
-Creates an object lens for a given property on an object. `.get` returns the value at that path and `set` places a new value at that path. Supports deep paths like lodash get/set.
-
-#### lensOf
-Takes an object and returns an object with lenses at the values of each path. Basically `mapValues(lensProp)`.
-
-#### includeLens
-`value -> arrayLens -> includeLens`
-An include lens represents membership of a value in a set. It's view and set functions allow you to read _and_ set a boolean value for whether or not a value is in an array. If you change to true or false, it will set the underlying array lens with a new array either without the value or with it pushed at the end.
-
-### Lens Manipulation
-*Note*: As of version 1.37, any manipulation function that takes a lens can also drop in a key and target object for an implicit lensProp conversion (e.g. you can do `view(key, obj)` instead of just `view(lens)`)
+We've included a few example "bindings" on `F.domLens`. These take a lens and return an object that's useful in a DOM context (like React or raw JS). In React terms, they're methods that generate the props you'd use to do two way binding to a lens.
 
 #### view
 `Lens -> object.propertyName`
-Gets the value of the lens, regardless of if it's a function or object lens
+Gets the value of the lens, regardless of its format
 
 #### views
 `Lens -> (() -> object.propertyName)`
-Returns a function that gets the value of the lens, regardless of if it's a function or object lens
+Returns a function that gets the value of the lens, regardless of its format
 
 #### set
 `propertyValue -> Lens -> object.propertyName`
-Sets the value of the lens, regardless of if it's a function or object lens
+Sets the value of the lens, regardless of its format
 
 #### sets
 Creates a function that will set a lens with the provided value
@@ -585,15 +594,22 @@ Returns a function that will set a lens to `true`
 #### off
 Returns a function that will set a lens to `false`
 
-### Lens Consumption - DomLens
-
-To help illustrate the potential use cases of the power of lenses, these are some functions that consume lenses in useful ways that are relevant in a DOM context including raw js, react, etc. They are pure functions, have no external dependencies, and are generally trivial - but hopefully they illustrate some interesting use cases.
+#### includeLens
+`value -> arrayLens -> includeLens`
+An include lens represents membership of a value in a set. It takes a value and lens and returns a new lens - kind of like a "writeable computed" from MobX or Knockout. The view and set functions allow you to read and write a boolean value for whether or not a value is in an array. If you change to true or false, it will set the underlying array lens with a new array either without the value or with it pushed at the end.
 
 #### domLens.value
-`lens -> {value, onChange}` Takes a lens and returns a value/onChange pair that views/sets the lens appropriately. `onChange` sets with `e.target.value`
+`lens -> {value, onChange}` Takes a lens and returns a value/onChange pair that views/sets the lens appropriately. `onChange` sets with `e.target.value` (or `e` if that path isn't present).
+Example:
+```
+let Component = () => {
+  let state = React.useState('')
+  return <input {...F.domLens.value(state)}>
+}
+```
 
 #### domLens.checkboxValues
-`(value, lens) -> {checked, onChange}` Creates an includeLens and maps view to checked and set to `onChange` (set with `e.target.checked`)
+`(value, lens) -> {checked, onChange}` Creates an includeLens and maps view to checked and set to `onChange` (set with `e.target.checked` or `e` if that path isn't present)
 
 #### domLens.hover
 `lens -> { onMouseOver, onMouseOut }` Takes a lens and returns on onMouseOver which calls `on` on the lens and onMouseOut which calls `off`. Models a mapping of "hovering" to a boolean.
@@ -607,10 +623,29 @@ To help illustrate the potential use cases of the power of lenses, these are som
 #### domLens.binding
 `(field, getValue) -> lens -> {[field], onChange}` Even more generic utility than targetBinding which uses `getEventValue` to as the function for a setsWith which is mapped to `onChange`.
 
-### Lens Utils
+### functionLens
+Takes a value and returns a function lens for that value. Mostly used for testing and mocking purposes.
 
-#### stateLens
-`([value, setValue]) -> lens` Given the popularity of React, we decided to include this little helper that converts a `useState` hook call to a lens. Ex: `let lens = stateLens(useState(false))`.
+### objectLens
+Takes a value and returns a object lens for that value. Mostly used for testing and mocking purposes.
+
+### stateLens
+`([value, setValue]) -> lens` Given the popularity of React, we decided to include this little helper that converts a `useState` hook call to a lens. Ex: `let lens = stateLens(useState(false))`. You generally won't use this directly since you can pass the `[value, setter]` pair directly to lens functions
+
+### lensProp
+`propertyName -> object -> { get: () -> object.propertyName, set: propertyValue -> object.propertyName }`
+Creates an object lens for a given property on an object. `.get` returns the value at that path and `set` places a new value at that path. Supports deep paths like lodash get/set.
+You typically won't use this directly since it is supported implicitly.
+
+### lensOf
+Takes an object and returns an object with lenses at the values of each path. Basically `mapValues(lensProp)`. Typically you'd just use the implicit `(key, object)` format instead.
+
+### fnToObj
+Converts a function lens an object lens. Mostly used for testing and mocking purposes.
+
+### objToFn
+Converts an object lens to a function lens. Mostly used for testing and mocking purposes.
+
 
 ## Aspect
 Aspects provide a functional oriented implementation of Aspect Oriented Programming.
