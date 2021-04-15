@@ -1,5 +1,6 @@
 import _ from 'lodash/fp'
 
+// funcs
 export * from './conversion'
 export * from './collection'
 export * from './function'
@@ -14,19 +15,8 @@ export * from './lens'
 export * from './tree'
 export * from './iterators'
 
-import * as conversion from './conversion'
-import * as collection from './collection'
-import * as fn from './function'
-import * as string from './string'
-import * as object from './object'
-import * as aspect from './aspect'
-import * as array from './array'
-import * as logic from './logic'
-import * as regex from './regex'
-import * as lang from './lang'
-import * as lens from './lens'
-import * as tree from './tree'
-import * as iterators from './iterators'
+// helpers
+export * from './convert'
 
 // Math
 // ----

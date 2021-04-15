@@ -1,9 +1,7 @@
 import _ from 'lodash/fp'
-import { findIndexed } from './conversion'
+import { noCap } from './convert'
 import { push, dotEncoder, slashEncoder } from './array'
-
-export let isTraversable = x => _.isArray(x) || _.isPlainObject(x)
-export let traverse = x => isTraversable(x) && !_.isEmpty(x) && x
+import { isTraversable } from './traversable'
 
 export let walk = (next = traverse) => (
   pre,
@@ -12,7 +10,7 @@ export let walk = (next = traverse) => (
   parentIndexes = []
 ) => (tree, index) =>
   pre(tree, index, parents, parentIndexes) ||
-  findIndexed(
+  noCap.findIndexed(
     walk(next)(pre, post, [tree, ...parents], [index, ...parentIndexes]),
     next(tree, index, parents, parentIndexes) || []
   ) ||

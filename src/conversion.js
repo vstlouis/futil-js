@@ -1,9 +1,6 @@
 import _ from 'lodash/fp'
 import { aspects } from './aspect'
-import * as mutable from './mutable'
-
-const noRearg = _.convert({ rearg: false })
-const noCap = _.convert({ cap: false })
+import { mutable, noRearg, noCap } from './convert'
 
 // Flips
 // ----------
@@ -35,10 +32,3 @@ export const each = aspects.deprecate(
   '1.28.0',
   'eachIndexed'
 )(noCap.each)
-
-export const mapIndexed = noCap.map
-export const findIndexed = noCap.find
-export const eachIndexed = noCap.each
-export const reduceIndexed = noCap.reduce
-export const pickByIndexed = noCap.pickBy
-export const mapValuesIndexed = noCap.mapValues

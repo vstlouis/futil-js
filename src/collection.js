@@ -1,5 +1,5 @@
 import _ from 'lodash/fp'
-import { isTraversable } from './tree'
+import { isTraversable } from './traversable'
 
 export const flowMap = (...fns) => _.map(_.flow(...fns))
 export let findApply = _.curry((f, arr) => _.iteratee(f)(_.find(f, arr)))

@@ -2,18 +2,11 @@ import _ from 'lodash/fp'
 import { dotJoinWith, zipObjectDeepWith } from './array'
 import { overNone, ifElse } from './logic'
 import { isNotNil, isBlank } from './lang'
-import {
-  reduceIndexed,
-  pickIn,
-  getIn,
-  hasIn,
-  mapIndexed,
-  mapValuesIndexed,
-} from './conversion'
+import { noCap } from './convert'
+import { pickIn, getIn, hasIn } from './conversion'
 import { findApply } from './collection'
 import { aspects } from './aspect'
 import { mapArgs } from './function'
-const noCap = _.convert({ cap: false })
 
 // (k, v) -> {k: v}
 export const singleObject = _.curry((key, value) => ({ [key]: value }))
@@ -61,7 +54,7 @@ export const isFlatObject = overNone([_.isPlainObject, _.isArray])
 
 // { a: { b: { c: 1 } } } => { 'a.b.c' : 1 }
 export const flattenObject = (input, paths) =>
-  reduceIndexed(
+  nocap.reduceIndexed(
     (output, value, key) =>
       _.merge(
         output,
@@ -127,14 +120,14 @@ export let cascadeProp = _.curry((paths, obj) =>
 )
 
 export let unkeyBy = _.curry((keyName, obj) =>
-  mapIndexed((val, key) => _.extend(val, { [keyName || key]: key }))(obj)
+  noCap.mapIndexed((val, key) => _.extend(val, { [keyName || key]: key }))(obj)
 )
 
 export let simpleDiff = (original, deltas) => {
   let o = flattenObject(original)
   return _.flow(
     flattenObject,
-    mapValuesIndexed((to, field) => ({ from: o[field], to })),
+    noCap.mapValuesIndexed((to, field) => ({ from: o[field], to })),
     _.omitBy(x => _.isEqual(x.from, x.to))
   )(deltas)
 }
@@ -144,7 +137,7 @@ export let diff = (original, deltas) => {
   let o = flattenObject(original)
   let d = flattenObject(deltas)
   return _.flow(
-    mapValuesIndexed((_, field) => ({ from: o[field], to: d[field] })),
+    noCap.mapValuesIndexed((_, field) => ({ from: o[field], to: d[field] })),
     _.omitBy(x => _.isEqual(x.from, x.to))
   )(_.merge(o, d))
 }
@@ -168,13 +161,13 @@ let mergeArrays = (objValue, srcValue) =>
 export let mergeAllArrays = _.mergeAllWith(mergeArrays)
 // { a: [x, y, z], b: [x] } -> { x: [a, b], y: [a], z: [a] }
 export let invertByArray = _.flow(
-  mapIndexed((arr, key) => zipObjectDeepWith(arr, () => [key])),
+  noCap.mapIndexed((arr, key) => zipObjectDeepWith(arr, () => [key])),
   mergeAllArrays
 )
 
 // key -> { a: { x: 1 }, b: { y: 2 } } -> { a: { x: 1, key: 'a' }, b: { y: 2, key: 'b' } }
 export const stampKey = _.curry((key, x) =>
-  mapValuesIndexed((val, k) => ({ ...val, [key]: k }), x)
+  noCap.mapValuesIndexed((val, k) => ({ ...val, [key]: k }), x)
 )
 
 export let omitNil = x => _.omitBy(_.isNil, x)

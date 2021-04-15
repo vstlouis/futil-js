@@ -1,5 +1,5 @@
 import _ from 'lodash/fp'
-import { setOn } from './mutable'
+import { mutable } from './convert'
 import { toggleElementBy } from './array'
 import { when } from './logic'
 
@@ -27,7 +27,7 @@ export let objToFn = lens => (...values) =>
 export let lensProp = (field, source) => ({
   get: () => _.get(field, source), //source[field],
   set(value) {
-    setOn(field, value, source)
+    mutable.setOn(field, value, source)
     // source[field] = value
   },
 })

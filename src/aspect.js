@@ -1,5 +1,5 @@
 import _ from 'lodash/fp'
-import { defaultsOn, setOn } from './mutable'
+import { mutable } from './convert'
 import { throws, tapError } from './lang'
 
 // Core
@@ -73,25 +73,25 @@ export let aspectSync = ({
 }
 
 // Example Aspects
-let logs = (extend = defaultsOn) =>
+let logs = (extend = mutable.defaultsOn) =>
   aspect({
     init: extend({ logs: [] }),
     after: (result, state) => state.logs.push(result),
     name: 'logs',
   })
-let error = (extend = defaultsOn) =>
+let error = (extend = mutable.defaultsOn) =>
   aspect({
     init: extend({ error: null }),
-    onError: setOn('error'),
+    onError: mutable.setOn('error'),
     name: 'error',
   })
-let errors = (extend = defaultsOn) =>
+let errors = (extend = mutable.defaultsOn) =>
   aspect({
     init: extend({ errors: [] }),
     onError: (e, state) => state.errors.push(e),
     name: 'errors',
   })
-let status = (extend = defaultsOn) =>
+let status = (extend = mutable.defaultsOn) =>
   aspect({
     init: extend({
       status: null,
