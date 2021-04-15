@@ -34,23 +34,23 @@ export const greaterThanOne = _.lt(1)
 
 // Version
 // ----
-export const VERSION = global.__VERSION__
+export const VERSION = global.__VERSION__ || '----v9'
 
 // Allows `import F from 'futil-js'`
-export default {
-  ...conversion,
-  ...collection,
-  ...fn,
-  ...string,
-  ...object,
-  ...aspect,
-  ...array,
-  ...logic,
-  ...regex,
-  ...lang,
-  ...lens,
-  ...tree,
-  ...iterators,
-  greaterThanOne,
-  VERSION,
-}
+// export default {
+//   ...conversion,
+//   ...collection,
+//   ...fn,
+//   ...string,
+//   ...object,
+//   ...aspect,
+//   ...array,
+//   ...logic,
+//   ...regex,
+//   ...lang,
+//   ...lens,
+//   ...tree,
+//   ...iterators,
+//   greaterThanOne,
+//   VERSION,
+// }
