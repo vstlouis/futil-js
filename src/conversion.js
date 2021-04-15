@@ -1,8 +1,8 @@
 import _ from 'lodash/fp'
 import { aspects } from './aspect'
+import * as mutable from './mutable'
 
 const noRearg = _.convert({ rearg: false })
-const mutable = _.convert({ immutable: false })
 const noCap = _.convert({ cap: false })
 
 // Flips
@@ -12,13 +12,6 @@ export const hasIn = noRearg.has
 export const pickIn = noRearg.pick
 export const includesIn = noRearg.includes
 export const inversions = _.mapKeys(k => `${k}In`, noRearg)
-
-// Mutables
-// ----------
-export const extendOn = mutable.extend
-export const defaultsOn = mutable.defaults
-export const mergeOn = mutable.merge
-export const setOn = mutable.set
 // Curry required until https://github.com/lodash/lodash/issues/3440 is resolved
 export const unsetOn = _.curryN(2, mutable.unset)
 export const pullOn = mutable.pull

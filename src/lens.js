@@ -1,5 +1,5 @@
 import _ from 'lodash/fp'
-import { setOn } from './conversion'
+import { setOn } from './mutable'
 import { toggleElementBy } from './array'
 import { when } from './logic'
 
